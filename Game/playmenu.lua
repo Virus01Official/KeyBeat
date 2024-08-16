@@ -12,6 +12,7 @@ local mouseX, mouseY = 0, 0  -- Variables to store mouse coordinates
 local ModifiersButton = love.graphics.newImage("assets/modifiers.png")
 local EnableFPS = settings.getEnableFPS()
 local currentMusic = nil  -- Track the currently playing music
+local FeaturedMapsFolder = "Featured Maps"
 local ModifiersVisible = false
 local activeModifiers = {}
 local AllModifiers = {
@@ -25,6 +26,9 @@ local AllModifiers = {
 local searchQuery = ""  -- Store the search query
 local filteredOptions = {}  -- Store filtered options based on search query
 
+-- Add a table to store featured maps
+local featuredOptions = {}
+
 local function getTranslation(key)
     return settings.getTranslation(key)
 end
@@ -32,6 +36,7 @@ end
 function playmenu.load(breakdown)
     if not optionsLoaded then
         loadSongs()
+        loadFeaturedMaps()  -- Load featured maps as well
         optionsLoaded = true
     end
     scoreBreakdown = breakdown
@@ -40,6 +45,7 @@ end
 
 function loadSongs()
     local songsFolder = "songs"
+
     for _, folder in ipairs(love.filesystem.getDirectoryItems(songsFolder)) do
         local chartPath = songsFolder .. "/" .. folder .. "/chart.txt"
         local musicPathMp3 = songsFolder .. "/" .. folder .. "/music.mp3"
@@ -88,6 +94,56 @@ function loadSongs()
         end
     end
 end
+
+function loadFeaturedMaps()
+    local FeaturedMapsFolder = "Featured Maps"
+    for _, folder in ipairs(love.filesystem.getDirectoryItems(FeaturedMapsFolder)) do
+        local chartPath = FeaturedMapsFolder .. "/" .. folder .. "/chart.txt"
+        local musicPathMp3 = FeaturedMapsFolder .. "/" .. folder .. "/music.mp3"
+        local musicPathOgg = FeaturedMapsFolder .. "/" .. folder .. "/music.ogg"
+        local backgroundPathPng = FeaturedMapsFolder .. "/" .. folder .. "/background.png"
+        local backgroundPathJpg = FeaturedMapsFolder .. "/" .. folder .. "/background.jpg"            
+        local backgroundPathJpeg = FeaturedMapsFolder .. "/" .. folder .. "/background.jpeg"
+        local musicPath = nil
+        local backgroundPath = nil
+        local infoPath = FeaturedMapsFolder .. "/" .. folder .. "/info.txt"
+    
+        -- Check if either .mp3 or .ogg file exists
+        if love.filesystem.getInfo(musicPathMp3) then
+            musicPath = musicPathMp3
+        elseif love.filesystem.getInfo(musicPathOgg) then
+            musicPath = musicPathOgg
+        end
+    
+        -- Check if either .png, .jpg, .jpeg, or .mp4 file exists
+            if love.filesystem.getInfo(backgroundPathPng) then
+                backgroundPath = backgroundPathPng
+            elseif love.filesystem.getInfo(backgroundPathJpg) then
+                backgroundPath = backgroundPathJpg
+            elseif love.filesystem.getInfo(backgroundPathJpeg) then
+                backgroundPath = backgroundPathJpeg
+            end
+    
+            if love.filesystem.getInfo(chartPath) and musicPath then
+                local credits, difficulty = "Unknown", "Unknown"
+                if love.filesystem.getInfo(infoPath) then
+                    local info = love.filesystem.read(infoPath)
+                    for line in info:gmatch("[^\r\n]+") do
+                        local key, value = line:match("([^:]+):%s*(.+)")
+                        if key and value then
+                            if key == "Credits" then
+                                credits = value
+                            elseif key == "Difficulty" then
+                                difficulty = value
+                            end
+                        end
+                    end
+                end
+                local song = {chart = chartPath, music = musicPath, name = folder, credits = credits, difficulty = difficulty, background = backgroundPath}
+                table.insert(featuredOptions, song)  -- Store featured maps separately
+            end
+        end
+    end
 
 function playmenu.update(dt)
 end
@@ -141,59 +197,73 @@ function playmenu.draw()
         love.graphics.setColor(0, 0, 0)
         love.graphics.printf(searchQuery, love.graphics.getWidth() / 4 + 5, love.graphics.getHeight() - 75, love.graphics.getWidth() / 2 - 10, "left")
 
-        -- Filtered options based on search query
-        local filteredOptions = {}
-        for _, option in ipairs(options) do
-            if string.find(string.lower(option.name), string.lower(searchQuery)) then
-                table.insert(filteredOptions, option)
-            end
-        end
+    -- Draw tab buttons
+    love.graphics.setColor(currentTab == "all" and {0.8, 0.8, 0.8} or {1, 1, 1})
+    love.graphics.rectangle("fill", 10, love.graphics.getHeight() - 75, 100, 30)
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.printf("All Maps", 10, love.graphics.getHeight() - 70, 100, "center")
 
-        -- Ensure the color is reset to white before drawing the image
-        love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setColor(currentTab == "featured" and {0.8, 0.8, 0.8} or {1, 1, 1})
+    love.graphics.rectangle("fill", 120, love.graphics.getHeight() - 75, 120, 30)
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.printf("Featured Maps", 120, love.graphics.getHeight() - 70, 120, "center")
 
-        -- Calculate the scaling factors
-        local desiredWidth = 80
-        local desiredHeight = 80
-        local scaleX = desiredWidth / ModifiersButton:getWidth()
-        local scaleY = desiredHeight / ModifiersButton:getHeight()
-
-        -- Draw the modifier button with scaling
-        love.graphics.draw(ModifiersButton, 0, love.graphics.getHeight() - 100, 0, scaleX, scaleY)
-
-        if EnableFPS == true then
-            love.graphics.print("FPS: " .. love.timer.getFPS(), 0, 0)
-        end
-
-        local startY = 100
-        for i = scrollOffset + 1, math.min(scrollOffset + visibleOptions, #filteredOptions) do
-            local option = filteredOptions[i]
-            local bgY = startY + (i - scrollOffset - 1) * 100
-
-            local mouseXCenter = love.mouse.getX()
-            local mouseYCenter = love.mouse.getY()
-            local optionTopY = bgY
-            local optionBottomY = bgY + 80
-            local optionLeftX = love.graphics.getWidth() / 4
-            local optionRightX = love.graphics.getWidth() / 4 + love.graphics.getWidth() / 2
-            
-            local isMouseOver = mouseXCenter >= optionLeftX and mouseXCenter <= optionRightX and
-                                 mouseYCenter >= optionTopY and mouseYCenter <= optionBottomY
-
-            if i == selectedOption or isMouseOver then
-                love.graphics.setColor(0.7, 0.7, 0.7, 1)
-            else
-                love.graphics.setColor(1, 1, 1, 1)
-            end
-
-            love.graphics.rectangle("fill", love.graphics.getWidth() / 4, bgY, love.graphics.getWidth() / 2, 80)
-            
-            love.graphics.setColor(0, 0, 0, 1)
-            love.graphics.printf(option.name, love.graphics.getWidth() / 4, bgY + 10, love.graphics.getWidth() / 2, "center")
-            love.graphics.printf("Credits: " .. option.credits, love.graphics.getWidth() / 4, bgY + 30, love.graphics.getWidth() / 2, "center")
-            love.graphics.printf("Difficulty: " .. option.difficulty, love.graphics.getWidth() / 4, bgY + 50, love.graphics.getWidth() / 2, "center")
+    -- Filtered options based on search query
+    local filteredOptions = {}
+    for _, option in ipairs(options) do
+        if string.find(string.lower(option.name), string.lower(searchQuery)) then
+            table.insert(filteredOptions, option)
         end
     end
+
+    -- Ensure the color is reset to white before drawing the image
+    love.graphics.setColor(1, 1, 1, 1)
+
+    -- Calculate the scaling factors
+    local desiredWidth = 80
+    local desiredHeight = 80
+    local scaleX = desiredWidth / ModifiersButton:getWidth()
+    local scaleY = desiredHeight / ModifiersButton:getHeight()
+
+    -- Draw the modifier button with scaling
+    love.graphics.draw(ModifiersButton, love.graphics.getWidth() - 100, love.graphics.getHeight() - 100, 0, scaleX, scaleY)
+
+    if EnableFPS == true then
+        love.graphics.print("FPS: " .. love.timer.getFPS(), 0, 0)
+    end
+
+    -- Draw maps based on the active tab
+    local mapsToDisplay = (currentTab == "featured") and featuredOptions or filteredOptions
+
+    local startY = 100
+    for i = scrollOffset + 1, math.min(scrollOffset + visibleOptions, #mapsToDisplay) do
+        local option = mapsToDisplay[i]
+        local bgY = startY + (i - scrollOffset - 1) * 100
+
+        local mouseXCenter = love.mouse.getX()
+        local mouseYCenter = love.mouse.getY()
+        local optionTopY = bgY
+        local optionBottomY = bgY + 80
+        local optionLeftX = love.graphics.getWidth() / 4
+        local optionRightX = love.graphics.getWidth() / 4 + love.graphics.getWidth() / 2
+
+        local isMouseOver = mouseXCenter >= optionLeftX and mouseXCenter <= optionRightX and
+                             mouseYCenter >= optionTopY and mouseYCenter <= optionBottomY
+
+        if i == selectedOption or isMouseOver then
+            love.graphics.setColor(0.7, 0.7, 0.7, 1)
+        else
+            love.graphics.setColor(1, 1, 1, 1)
+        end
+
+        love.graphics.rectangle("fill", love.graphics.getWidth() / 4, bgY, love.graphics.getWidth() / 2, 80)
+
+        love.graphics.setColor(0, 0, 0, 1)
+        love.graphics.printf(option.name, love.graphics.getWidth() / 4, bgY + 10, love.graphics.getWidth() / 2, "center")
+        love.graphics.printf("Credits: " .. option.credits, love.graphics.getWidth() / 4, bgY + 30, love.graphics.getWidth() / 2, "center")
+        love.graphics.printf("Difficulty: " .. option.difficulty, love.graphics.getWidth() / 4, bgY + 50, love.graphics.getWidth() / 2, "center")
+    end
+end
 end
 
 function playmenu.wheelmoved(x, y)
@@ -212,8 +282,19 @@ function playmenu.mousepressed(x, y, button)
         end
     else
         if button == 1 then  -- Left mouse button
+            -- Check if tab buttons were clicked
+            if x >= 10 and x <= 110 and y >= love.graphics.getHeight() - 75 and y <= love.graphics.getHeight() - 45 then
+                currentTab = "all"
+                scrollOffset = 0
+                return
+            elseif x >= 120 and x <= 240 and y >= love.graphics.getHeight() - 75 and y <= love.graphics.getHeight() - 45 then
+                currentTab = "featured"
+                scrollOffset = 0
+                return
+            end
 
-            local modifiersButtonX = 0
+            -- Check if any modifier buttons were clicked
+            local modifiersButtonX = love.graphics.getWidth() - 100
             local modifiersButtonY = love.graphics.getHeight() - 100
             local modifiersButtonWidth = 80
             local modifiersButtonHeight = 80
@@ -241,19 +322,20 @@ function playmenu.mousepressed(x, y, button)
             end
 
             -- Calculate which option was clicked
+            local mapsToDisplay = (currentTab == "featured") and featuredOptions or filteredOptions
             local startY = 100
             local indexClicked = math.floor((y - startY) / 100) + 1 + scrollOffset
 
-            if indexClicked >= 1 and indexClicked <= #filteredOptions then
+            if indexClicked >= 1 and indexClicked <= #mapsToDisplay then
                 if selectedOption == indexClicked then
                     -- If the same map is clicked again, start the game
-                    local selected = filteredOptions[selectedOption]
+                    local selected = mapsToDisplay[selectedOption]
                     stopMusic()
                     startGame(selected.chart, selected.music, selected.background)
                 else
                     -- Select a new map and play its music
                     selectedOption = indexClicked
-                    local selected = filteredOptions[selectedOption]
+                    local selected = mapsToDisplay[selectedOption]
                     menu.stopMusic()
                     playMusic(selected.music)
                 end
