@@ -35,6 +35,22 @@ local ratingTextEffects = {}
 local isPaused = false
 local activeModifiers = playmenu.getModifiers()
 
+--Character that reacts
+local EmiNeutral = love.graphics.newImage("assets/Emi_Neutral.png") -- when no notes are clicked or missed
+local EmiHappy = love.graphics.newImage("assets/Emi_Happy.png") -- when a note is hit
+local EmiSad = love.graphics.newImage("assets/Emi_Sad.png") -- when a note is missed
+
+local characterState = "neutral"  -- Initial state of the character
+local expressionTimer = 0  -- Timer to revert back to neutral
+
+local characterSizeX = 300
+local characterSizeY = 300
+local CharacterscaleX = characterSizeX / EmiNeutral:getWidth()
+local CharacterscaleY = characterSizeY / EmiNeutral:getHeight()
+
+local characterX = 990
+local characterY = love.graphics.getHeight() - 300  -- Adjust based on your game layout
+
 local health = 100 -- Initial player health
 local maxHealth = 100 -- Maximum health
 local healthLossPerMiss = 10 -- Health lost per miss
@@ -62,6 +78,23 @@ local grades = {
     { grade = "C", minAccuracy = 60, maxAccuracy = 69.99 },
     { grade = "D", maxAccuracy = 59.99 }
 }
+
+-- Function to draw the character based on the current state
+local function drawCharacter()
+    local characterImage
+
+    -- Choose the correct character image based on the current state
+    if characterState == "happy" then
+        characterImage = EmiHappy
+    elseif characterState == "sad" then
+        characterImage = EmiSad
+    else
+        characterImage = EmiNeutral
+    end
+
+    -- Draw the character at the specified position with the calculated scale
+    love.graphics.draw(characterImage, characterX, characterY, 0, CharacterscaleX, CharacterscaleY)
+end
 
 local function getTranslation(key)
     return settings.getTranslation(key)
@@ -209,6 +242,15 @@ function game.update(dt)
         return
     end
 
+    -- Handle character state timer to revert to neutral
+    if characterState ~= "neutral" then
+        expressionTimer = expressionTimer - dt
+        if expressionTimer <= 0 then
+            characterState = "neutral"
+            expressionTimer = 0
+        end
+    end
+
     local currentTime = love.timer.getTime()
 
     if currentTime >= musicStartTime and not music:isPlaying() then
@@ -233,6 +275,8 @@ function game.update(dt)
             love.audio.play(miss)
             health = health - healthLossPerMiss -- Decrease health on miss
             updateAccuracy()
+            characterState = "sad" -- Set character to happy when a note is hit
+            expressionTimer = 0.5 -- Reset the timer to revert back to neutral
         end
     end
 
@@ -286,6 +330,9 @@ function game.draw()
     love.graphics.setColor(0, 0, 0, dim)
     love.graphics.rectangle("fill", 0, 0, windowWidth, windowHeight)
     love.graphics.setColor(1, 1, 1, 1) -- Reset color
+
+    -- Draw the character
+    drawCharacter()
     
     if activeModifiers["Hidden"] then
         -- do nothing
@@ -416,11 +463,15 @@ function game.keypressed(key)
                 table.insert(hitEffects, {x = note.x, time = hitEffectDuration})
                 love.audio.play(hitsound)
                 addRatingEffect(note.time - songTime) -- Add rating effect
+                characterState = "happy" -- Set character to happy when a note is hit
+                expressionTimer = 0.5 -- Reset the timer to revert back to neutral
             end
         elseif note.y and note.y >= hitLineY - hitboxSize and note.y <= hitLineY + hitboxSize then
             table.insert(hitEffects, {x = note.x, time = hitEffectDuration})
             table.insert(hitNotes, i)
             addRatingEffect(note.time - songTime) -- Add rating effect
+            characterState = "happy" -- Set character to happy when a note is hit
+                expressionTimer = 0.5 -- Reset the timer to revert back to neutral
         end
     end
 
@@ -451,6 +502,8 @@ function game.keyreleased(key)
                     love.audio.play(hitsound)
                     health = math.min(health + healthGainPerHit, maxHealth) -- Increase health on hit
                     updateAccuracy()
+                    characterState = "neutral"
+                    expressionTimer = 0.5  -- Time before reverting to neutral
                     break
                 end
             end
