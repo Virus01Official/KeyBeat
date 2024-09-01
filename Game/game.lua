@@ -43,13 +43,13 @@ local EmiSad = love.graphics.newImage("assets/Emi_Sad.png") -- when a note is mi
 local characterState = "neutral"  -- Initial state of the character
 local expressionTimer = 0  -- Timer to revert back to neutral
 
-local characterSizeX = 300
-local characterSizeY = 300
+local characterSizeX = 250
+local characterSizeY = 250
 local CharacterscaleX = characterSizeX / EmiNeutral:getWidth()
 local CharacterscaleY = characterSizeY / EmiNeutral:getHeight()
 
-local characterX = 990
-local characterY = love.graphics.getHeight() - 300  -- Adjust based on your game layout
+local characterX = 1050
+local characterY = love.graphics.getHeight() - 250  -- Adjust based on your game layout
 
 local health = 100 -- Initial player health
 local maxHealth = 100 -- Maximum health
