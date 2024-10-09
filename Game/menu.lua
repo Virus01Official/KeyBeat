@@ -26,6 +26,7 @@ local randomTips = {
     "'Click the circles'",
     "osu! is a game about circles",
     "Ado my beloved :DDD",
+    "Touhou is awesome",
 }
 
 local function getTranslation(key)
@@ -98,6 +99,58 @@ function menu.load()
     logoY = love.graphics.getHeight() / 2
 end
 
+function drawMenu()
+    local translatedTips = getTranslation(randomTips[randomIndex])
+    local text = translatedTips
+    local textWidth = love.graphics.getFont():getWidth(text)
+
+    -- Calculate the x-coordinate to center the text
+    local x = (love.graphics.getWidth() - textWidth) / 2
+
+    -- Draw the current background scaled to the window size
+    love.graphics.draw(currentBackground, 0, 0, 0, backgroundScaleX, backgroundScaleY)
+
+    -- Draw the dimming overlay
+    love.graphics.setColor(0, 0, 0, 0.5)  -- Set color to black with 50% opacity
+    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+    love.graphics.setColor(1, 1, 1, 1)  -- Reset color to white with 100% opacity
+    
+    -- Draw the game logo
+    love.graphics.draw(GameLogo, logoX, logoY, logoRotation, logoScale, logoScale, GameLogo:getWidth() / 2, GameLogo:getHeight() / 2)
+
+    -- Draw the rest of the assets
+    local translatedVer = getTranslation("Version: ")
+    love.graphics.print(translatedVer .. currentVersion, 0, love.graphics.getHeight() - 50, 0, 1)
+    love.graphics.print(text, x, love.graphics.getHeight() - 50, 0, 1)
+end
+
+function drawButton()
+    local mouseX, mouseY = love.mouse.getPosition()
+    for i, option in ipairs(options) do
+        local translatedOption = getTranslation(option)
+        local optionX = 0
+        local optionY = love.graphics.getHeight() / 2 - 50 + i * 30
+        local optionWidth = love.graphics.getWidth()
+        local optionHeight = 30  -- Assume each option has a height of 30 pixels
+
+        -- Check if the mouse is hovering over this option
+        if mouseX >= optionX and mouseX <= optionX + optionWidth and mouseY >= optionY and mouseY <= optionY + optionHeight then
+            selectedOption = i  -- Highlight this option
+        end
+
+        if i == selectedOption then
+            love.graphics.printf("-> " .. translatedOption, optionX, optionY, optionWidth, "center")
+        else
+            love.graphics.printf(translatedOption, optionX, optionY, optionWidth, "center")
+        end
+    end 
+end
+
+function songPlayingText()
+    local translatedNP = getTranslation("Now Playing: ")
+    love.graphics.printf(translatedNP .. currentSongName, 0, 0, love.graphics.getWidth(), "center")
+end
+
 function menu.update(dt)
     -- Check if the window size has changed
     local windowWidth, windowHeight = love.graphics.getDimensions()
@@ -122,60 +175,20 @@ function menu.update(dt)
 end
 
 function menu.draw()
-    local translatedTips = getTranslation(randomTips[randomIndex])
-    local text = translatedTips
-    local textWidth = love.graphics.getFont():getWidth(text)
-
-    -- Calculate the x-coordinate to center the text
-    local x = (love.graphics.getWidth() - textWidth) / 2
-
-    -- Draw the current background scaled to the window size
-    love.graphics.draw(currentBackground, 0, 0, 0, backgroundScaleX, backgroundScaleY)
-
-    -- Draw the dimming overlay
-    love.graphics.setColor(0, 0, 0, 0.5)  -- Set color to black with 50% opacity
-    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
-    love.graphics.setColor(1, 1, 1, 1)  -- Reset color to white with 100% opacity
+    drawMenu()
 
     if EnableFPS == true then
         love.graphics.print("FPS: " .. love.timer.getFPS(), 0, 0)
     end
 
-    -- Draw the game logo
-    love.graphics.draw(GameLogo, logoX, logoY, logoRotation, logoScale, logoScale, GameLogo:getWidth() / 2, GameLogo:getHeight() / 2)
-
-    -- Draw the rest of the assets
-    local translatedVer = getTranslation("Version: ")
-    love.graphics.print(translatedVer .. version, 0, love.graphics.getHeight() - 50, 0, 1)
-    love.graphics.print(text, x, love.graphics.getHeight() - 50, 0, 1)
-
     -- Draw the menu options if animation is done
     if showButtons then
-        local mouseX, mouseY = love.mouse.getPosition()
-        for i, option in ipairs(options) do
-            local translatedOption = getTranslation(option)
-            local optionX = 0
-            local optionY = love.graphics.getHeight() / 2 - 50 + i * 30
-            local optionWidth = love.graphics.getWidth()
-            local optionHeight = 30  -- Assume each option has a height of 30 pixels
-
-            -- Check if the mouse is hovering over this option
-            if mouseX >= optionX and mouseX <= optionX + optionWidth and mouseY >= optionY and mouseY <= optionY + optionHeight then
-                selectedOption = i  -- Highlight this option
-            end
-
-            if i == selectedOption then
-                love.graphics.printf("-> " .. translatedOption, optionX, optionY, optionWidth, "center")
-            else
-                love.graphics.printf(translatedOption, optionX, optionY, optionWidth, "center")
-            end
-        end
+       drawButton()
     end
 
     -- Draw the current song name
     if currentSongName then
-        local translatedNP = getTranslation("Now Playing: ")
-        love.graphics.printf(translatedNP .. currentSongName, 0, 0, love.graphics.getWidth(), "center")
+        songPlayingText()
     end
 end
 

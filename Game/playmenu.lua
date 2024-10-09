@@ -12,7 +12,6 @@ local mouseX, mouseY = 0, 0  -- Variables to store mouse coordinates
 local ModifiersButton = love.graphics.newImage("assets/modifiers.png")
 local EnableFPS = settings.getEnableFPS()
 local currentMusic = nil  -- Track the currently playing music
-local FeaturedMapsFolder = "Featured Maps"
 local ModifiersVisible = false
 local activeModifiers = {}
 local AllModifiers = {
@@ -26,9 +25,6 @@ local AllModifiers = {
 local searchQuery = ""  -- Store the search query
 local filteredOptions = {}  -- Store filtered options based on search query
 
--- Add a table to store featured maps
-local featuredOptions = {}
-
 local function getTranslation(key)
     return settings.getTranslation(key)
 end
@@ -36,7 +32,6 @@ end
 function playmenu.load(breakdown)
     if not optionsLoaded then
         loadSongs()
-        loadFeaturedMaps()  -- Load featured maps as well
         optionsLoaded = true
     end
     scoreBreakdown = breakdown
@@ -95,83 +90,8 @@ function loadSongs()
     end
 end
 
-function loadFeaturedMaps()
-    local FeaturedMapsFolder = "Featured Maps"
-    for _, folder in ipairs(love.filesystem.getDirectoryItems(FeaturedMapsFolder)) do
-        local chartPath = FeaturedMapsFolder .. "/" .. folder .. "/chart.txt"
-        local musicPathMp3 = FeaturedMapsFolder .. "/" .. folder .. "/music.mp3"
-        local musicPathOgg = FeaturedMapsFolder .. "/" .. folder .. "/music.ogg"
-        local backgroundPathPng = FeaturedMapsFolder .. "/" .. folder .. "/background.png"
-        local backgroundPathJpg = FeaturedMapsFolder .. "/" .. folder .. "/background.jpg"            
-        local backgroundPathJpeg = FeaturedMapsFolder .. "/" .. folder .. "/background.jpeg"
-        local musicPath = nil
-        local backgroundPath = nil
-        local infoPath = FeaturedMapsFolder .. "/" .. folder .. "/info.txt"
-    
-        -- Check if either .mp3 or .ogg file exists
-        if love.filesystem.getInfo(musicPathMp3) then
-            musicPath = musicPathMp3
-        elseif love.filesystem.getInfo(musicPathOgg) then
-            musicPath = musicPathOgg
-        end
-    
-        -- Check if either .png, .jpg, .jpeg, or .mp4 file exists
-            if love.filesystem.getInfo(backgroundPathPng) then
-                backgroundPath = backgroundPathPng
-            elseif love.filesystem.getInfo(backgroundPathJpg) then
-                backgroundPath = backgroundPathJpg
-            elseif love.filesystem.getInfo(backgroundPathJpeg) then
-                backgroundPath = backgroundPathJpeg
-            end
-    
-            if love.filesystem.getInfo(chartPath) and musicPath then
-                local credits, difficulty = "Unknown", "Unknown"
-                if love.filesystem.getInfo(infoPath) then
-                    local info = love.filesystem.read(infoPath)
-                    for line in info:gmatch("[^\r\n]+") do
-                        local key, value = line:match("([^:]+):%s*(.+)")
-                        if key and value then
-                            if key == "Credits" then
-                                credits = value
-                            elseif key == "Difficulty" then
-                                difficulty = value
-                            end
-                        end
-                    end
-                end
-                local song = {chart = chartPath, music = musicPath, name = folder, credits = credits, difficulty = difficulty, background = backgroundPath}
-                table.insert(featuredOptions, song)  -- Store featured maps separately
-            end
-        end
-    end
-
-function playmenu.update(dt)
-end
-
-function playmenu.draw()
-    love.graphics.setBackgroundColor(0.2, 0.2, 0.2) -- Dark background
-    love.graphics.setColor(0.1, 0.1, 0.1)
-    love.graphics.rectangle("fill", 0, love.graphics.getHeight() - 725, love.graphics.getWidth(), love.graphics.getHeight() - 600)
-    love.graphics.rectangle("fill", 0, love.graphics.getHeight() - 100, love.graphics.getWidth(), love.graphics.getHeight() - 600)
-
-    if scoreBreakdown then
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.printf(getTranslation("Score Breakdown:"), 0, 100, love.graphics.getWidth(), "center")
-        love.graphics.printf(getTranslation("Score: ") .. scoreBreakdown.score, 0, 150, love.graphics.getWidth(), "center")
-        love.graphics.printf(getTranslation("Hits: ") .. scoreBreakdown.hits, 0, 200, love.graphics.getWidth(), "center")
-        love.graphics.printf(getTranslation("Misses: ") .. scoreBreakdown.misses, 0, 250, love.graphics.getWidth(), "center")
-        love.graphics.printf(getTranslation("Accuracy: ") .. string.format("%.2f", scoreBreakdown.accuracy) .. "%", 0, 300, love.graphics.getWidth(), "center")
-        love.graphics.printf(getTranslation("Total Notes: ") .. scoreBreakdown.totalNotes, 0, 350, love.graphics.getWidth(), "center")
-        
-        local gradeImage = love.graphics.newImage("skins/default/" .. scoreBreakdown.grade .. ".png")
-        local x = love.graphics.getWidth() / 2 - RatingEffectImageSize / 2
-        local y = 400
-        love.graphics.draw(gradeImage, x, y, 0, RatingEffectImageSize / gradeImage:getWidth(), RatingEffectImageSize / gradeImage:getHeight())
-
-        love.graphics.printf(getTranslation("Press SPACE to continue..."), 0, love.graphics.getHeight() - 50, love.graphics.getWidth(), "center")
-    else
-        if ModifiersVisible then
-            love.graphics.setColor(0, 0, 0, 0.5)  -- Set color to black with 50% opacity
+function drawModifiers()
+    love.graphics.setColor(0, 0, 0, 0.5)  -- Set color to black with 50% opacity
             love.graphics.rectangle("fill", love.graphics.getWidth() - 200, 0, 200, love.graphics.getHeight())
 
             -- Draw the modifier buttons
@@ -189,36 +109,97 @@ function playmenu.draw()
                 love.graphics.setColor(0, 0, 0, 1)  -- Black text color
                 love.graphics.printf(modifier, love.graphics.getWidth() - 190, modifierY + 10, 180, "center")
             end
+end
+
+function drawScoreBreakdown()
+    love.graphics.setColor(1, 1, 1)
+        love.graphics.printf(getTranslation("Score Breakdown:"), 0, 100, love.graphics.getWidth(), "center")
+        love.graphics.printf(getTranslation("Score: ") .. scoreBreakdown.score, 0, 150, love.graphics.getWidth(), "center")
+        love.graphics.printf(getTranslation("Hits: ") .. scoreBreakdown.hits, 0, 200, love.graphics.getWidth(), "center")
+        love.graphics.printf(getTranslation("Misses: ") .. scoreBreakdown.misses, 0, 250, love.graphics.getWidth(), "center")
+        love.graphics.printf(getTranslation("Accuracy: ") .. string.format("%.2f", scoreBreakdown.accuracy) .. "%", 0, 300, love.graphics.getWidth(), "center")
+        love.graphics.printf(getTranslation("Total Notes: ") .. scoreBreakdown.totalNotes, 0, 350, love.graphics.getWidth(), "center")
+        
+        local gradeImage = love.graphics.newImage("skins/default/" .. scoreBreakdown.grade .. ".png")
+        local x = love.graphics.getWidth() / 2 - RatingEffectImageSize / 2
+        local y = 400
+        love.graphics.draw(gradeImage, x, y, 0, RatingEffectImageSize / gradeImage:getWidth(), RatingEffectImageSize / gradeImage:getHeight())
+
+        love.graphics.printf(getTranslation("Press SPACE to continue..."), 0, love.graphics.getHeight() - 50, love.graphics.getWidth(), "center")
+end
+
+function drawSearchBar()
+    -- Draw search bar
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.rectangle("fill", love.graphics.getWidth() / 4, love.graphics.getHeight() - 75, love.graphics.getWidth() / 2, 30)
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.printf(searchQuery, love.graphics.getWidth() / 4 + 5, love.graphics.getHeight() - 75, love.graphics.getWidth() / 2 - 10, "left")
+end
+
+function drawPlaymenu()
+    love.graphics.setBackgroundColor(0.2, 0.2, 0.2) -- Dark background
+    love.graphics.setColor(0.1, 0.1, 0.1)
+    love.graphics.rectangle("fill", 0, love.graphics.getHeight() - 725, love.graphics.getWidth(), love.graphics.getHeight() - 600)
+    love.graphics.rectangle("fill", 0, love.graphics.getHeight() - 100, love.graphics.getWidth(), love.graphics.getHeight() - 600)
+
+    if scoreBreakdown then
+        drawScoreBreakdown()
+    elseif ModifiersVisible then
+        drawModifiers()
+    else
+        drawSearchBar()
+
+        -- Filtered options based on search query
+        local filteredOptions = {}
+        for _, option in ipairs(options) do
+            if string.find(string.lower(option.name), string.lower(searchQuery)) then
+                table.insert(filteredOptions, option)
+            end
         end
 
-        -- Draw search bar
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.rectangle("fill", love.graphics.getWidth() / 4, love.graphics.getHeight() - 75, love.graphics.getWidth() / 2, 30)
-        love.graphics.setColor(0, 0, 0)
-        love.graphics.printf(searchQuery, love.graphics.getWidth() / 4 + 5, love.graphics.getHeight() - 75, love.graphics.getWidth() / 2 - 10, "left")
+        -- Ensure the color is reset to white before drawing the image
+        love.graphics.setColor(1, 1, 1, 1)
 
-    -- Draw tab buttons
-    love.graphics.setColor(currentTab == "all" and {0.8, 0.8, 0.8} or {1, 1, 1})
-    love.graphics.rectangle("fill", 10, love.graphics.getHeight() - 75, 100, 30)
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.printf("All Maps", 10, love.graphics.getHeight() - 70, 100, "center")
-
-    love.graphics.setColor(currentTab == "featured" and {0.8, 0.8, 0.8} or {1, 1, 1})
-    love.graphics.rectangle("fill", 120, love.graphics.getHeight() - 75, 120, 30)
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.printf("Featured Maps", 120, love.graphics.getHeight() - 70, 120, "center")
-
-    -- Filtered options based on search query
-    local filteredOptions = {}
-    for _, option in ipairs(options) do
-        if string.find(string.lower(option.name), string.lower(searchQuery)) then
-            table.insert(filteredOptions, option)
+        drawModifierButton()
+        
+        if EnableFPS == true then
+            love.graphics.print("FPS: " .. love.timer.getFPS(), 0, 0)
         end
+
+        drawSongs()
     end
+end
 
-    -- Ensure the color is reset to white before drawing the image
-    love.graphics.setColor(1, 1, 1, 1)
+function drawSongs()
+    local startY = 100
+        for i = scrollOffset + 1, math.min(scrollOffset + visibleOptions, #filteredOptions) do
+            local option = filteredOptions[i]
+            local bgY = startY + (i - scrollOffset - 1) * 100
+            local mouseXCenter = love.mouse.getX()
+            local mouseYCenter = love.mouse.getY()
+            local optionTopY = bgY
+            local optionBottomY = bgY + 80
+            local optionLeftX = love.graphics.getWidth() / 4
+            local optionRightX = love.graphics.getWidth() / 4 + love.graphics.getWidth() / 2
+            
+            local isMouseOver = mouseXCenter >= optionLeftX and mouseXCenter <= optionRightX and
+                                 mouseYCenter >= optionTopY and mouseYCenter <= optionBottomY
+            if i == selectedOption or isMouseOver then
+                love.graphics.setColor(0.7, 0.7, 0.7, 1)
+            else
+                love.graphics.setColor(1, 1, 1, 1)
+            end
 
+            love.graphics.rectangle("fill", love.graphics.getWidth() / 4, bgY, love.graphics.getWidth() / 2, 80)
+            
+            love.graphics.setColor(0, 0, 0, 1)
+            love.graphics.printf(option.name, love.graphics.getWidth() / 4, bgY + 10, love.graphics.getWidth() / 2, "center")
+            love.graphics.printf("Credits: " .. option.credits, love.graphics.getWidth() / 4, bgY + 30, love.graphics.getWidth() / 2, "center")
+            love.graphics.printf("Difficulty: " .. option.difficulty, love.graphics.getWidth() / 4, bgY + 50, love.graphics.getWidth() / 2, "center")
+        end
+end
+
+function drawModifierButton()
     -- Calculate the scaling factors
     local desiredWidth = 80
     local desiredHeight = 80
@@ -227,43 +208,13 @@ function playmenu.draw()
 
     -- Draw the modifier button with scaling
     love.graphics.draw(ModifiersButton, love.graphics.getWidth() - 100, love.graphics.getHeight() - 100, 0, scaleX, scaleY)
-
-    if EnableFPS == true then
-        love.graphics.print("FPS: " .. love.timer.getFPS(), 0, 0)
-    end
-
-    -- Draw maps based on the active tab
-    local mapsToDisplay = (currentTab == "featured") and featuredOptions or filteredOptions
-
-    local startY = 100
-    for i = scrollOffset + 1, math.min(scrollOffset + visibleOptions, #mapsToDisplay) do
-        local option = mapsToDisplay[i]
-        local bgY = startY + (i - scrollOffset - 1) * 100
-
-        local mouseXCenter = love.mouse.getX()
-        local mouseYCenter = love.mouse.getY()
-        local optionTopY = bgY
-        local optionBottomY = bgY + 80
-        local optionLeftX = love.graphics.getWidth() / 4
-        local optionRightX = love.graphics.getWidth() / 4 + love.graphics.getWidth() / 2
-
-        local isMouseOver = mouseXCenter >= optionLeftX and mouseXCenter <= optionRightX and
-                             mouseYCenter >= optionTopY and mouseYCenter <= optionBottomY
-
-        if i == selectedOption or isMouseOver then
-            love.graphics.setColor(0.7, 0.7, 0.7, 1)
-        else
-            love.graphics.setColor(1, 1, 1, 1)
-        end
-
-        love.graphics.rectangle("fill", love.graphics.getWidth() / 4, bgY, love.graphics.getWidth() / 2, 80)
-
-        love.graphics.setColor(0, 0, 0, 1)
-        love.graphics.printf(option.name, love.graphics.getWidth() / 4, bgY + 10, love.graphics.getWidth() / 2, "center")
-        love.graphics.printf("Credits: " .. option.credits, love.graphics.getWidth() / 4, bgY + 30, love.graphics.getWidth() / 2, "center")
-        love.graphics.printf("Difficulty: " .. option.difficulty, love.graphics.getWidth() / 4, bgY + 50, love.graphics.getWidth() / 2, "center")
-    end
 end
+
+function playmenu.update(dt)
+end
+
+function playmenu.draw()
+    drawPlaymenu()
 end
 
 function playmenu.wheelmoved(x, y)
@@ -282,17 +233,6 @@ function playmenu.mousepressed(x, y, button)
         end
     else
         if button == 1 then  -- Left mouse button
-            -- Check if tab buttons were clicked
-            if x >= 10 and x <= 110 and y >= love.graphics.getHeight() - 75 and y <= love.graphics.getHeight() - 45 then
-                currentTab = "all"
-                scrollOffset = 0
-                return
-            elseif x >= 120 and x <= 240 and y >= love.graphics.getHeight() - 75 and y <= love.graphics.getHeight() - 45 then
-                currentTab = "featured"
-                scrollOffset = 0
-                return
-            end
-
             -- Check if any modifier buttons were clicked
             local modifiersButtonX = love.graphics.getWidth() - 100
             local modifiersButtonY = love.graphics.getHeight() - 100
@@ -322,7 +262,6 @@ function playmenu.mousepressed(x, y, button)
             end
 
             -- Calculate which option was clicked
-            local mapsToDisplay = (currentTab == "featured") and featuredOptions or filteredOptions
             local startY = 100
             local indexClicked = math.floor((y - startY) / 100) + 1 + scrollOffset
 
