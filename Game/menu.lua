@@ -29,6 +29,12 @@ local randomTips = {
     "Touhou is awesome",
 }
 
+local eventTips = {
+    "Happy Halloween",
+    "Merry Christmas",
+    "Happy New Year",
+}
+
 local function getTranslation(key)
     return settings.getTranslation(key)
 end
@@ -100,10 +106,25 @@ function menu.load()
 end
 
 function drawMenu()
-    local translatedTips = getTranslation(randomTips[randomIndex])
-    local text = translatedTips
-    local textWidth = love.graphics.getFont():getWidth(text)
+    local currentDate = os.date("*t")  -- Returns a table with the current date and time
 
+    local text = nil
+
+    if currentDate.month == 10 then
+        local translatedEventTip = getTranslation(eventTips[1])
+        text = translatedEventTip
+    elseif currentDate.month == 12 then
+        local translatedEventTip = getTranslation(eventTips[2])
+        text = translatedEventTip
+    elseif currentDate.month == 1 and currentDate.day == 1 then
+        local translatedEventTip = getTranslation(eventTips[3])
+        text = translatedEventTip
+    else
+        local translatedTips = getTranslation(randomTips[randomIndex])
+        text = translatedTips
+    end
+
+    local textWidth = love.graphics.getFont():getWidth(text)
     -- Calculate the x-coordinate to center the text
     local x = (love.graphics.getWidth() - textWidth) / 2
 
