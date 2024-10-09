@@ -24,7 +24,7 @@ You can contact us through any of those ways:
 
 Twitter: https://x.com/KeyBeatGame
 
-Discord: https://discord.gg/SnAnC4x7VT
+Discord: https://discord.gg/3gNWTAZSh4
 
 Support Twitter: https://x.com/Moonwave_Help
 
