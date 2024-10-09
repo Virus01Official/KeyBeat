@@ -14,6 +14,7 @@ local activeHoldNote = nil
 local score = 0
 local misses = 0
 local hits = 0
+local scrollVelocity = settings.getScrollVelocity()
 local totalNotes = 0
 local accuracy = 100
 local music
@@ -35,6 +36,7 @@ local ratingTextDuration = 0.5 -- Duration for rating text to fade out
 local ratingTextEffects = {}
 local isPaused = false
 local activeModifiers = playmenu.getModifiers()
+local svChanges = {} -- New table to store scroll velocity changes
 
 --Character that reacts
 local EmiNeutral = love.graphics.newImage("assets/Emi_Neutral.png") -- when no notes are clicked or missed
@@ -165,7 +167,8 @@ function game.start(chartFile, musicFile, callback, backgroundFile)
     if backgroundFile then
         background = love.graphics.newImage(backgroundFile)
     end
-    noteSpeed = settings.getNoteSpeed()
+    local scrollVelocity = settings.getScrollVelocity()  -- Get current scroll velocity
+    noteSpeed = noteSpeed * scrollVelocity
     character = settings.getCharacterVis()
     noteSize = settings.getNoteSize()
     RatingEffectImageSize = settings.getRatingSize()
@@ -199,26 +202,30 @@ end
 
 function loadChart(filename)
     notes = {}
+    svChanges = {} -- Reset SV changes
     local chart = love.filesystem.read(filename)
     for line in chart:gmatch("[^\r\n]+") do
         local time, x, holdTime = line:match("([%d%.]+) ([%d%.]+) ([%d%.]+)")
-        --if activeModifiers["Double Time"] then
-         --   time = tonumber(time) / 2
-        --else
+        if time and x and holdTime then
             time = tonumber(time)
-        --end
-        if activeModifiers["Randomize"] then
-            x = math.random(0, love.graphics.getWidth() - 50)
-        else
-            x = tonumber(x)
-        end
-        holdTime = tonumber(holdTime)
-        table.insert(notes, {time = time, x = x, hold = holdTime > 0, holdTime = holdTime})
-        --if activeModifiers["Double Time"] then
-          --  chartEndTime = math.max(chartEndTime, time + holdTime / 2)
-        --else
+            if activeModifiers["Randomize"] then
+                x = math.random(0, love.graphics.getWidth() - 50)
+            else
+                x = tonumber(x)
+            end
+            holdTime = tonumber(holdTime)
+            table.insert(notes, {time = time, x = x, hold = holdTime > 0, holdTime = holdTime})
             chartEndTime = math.max(chartEndTime, time + holdTime)
-        --end
+        else
+            -- Check for SV changes
+            local svValue = line:match("SV ([%d%.]+)")
+            if svValue then
+                local svTime = tonumber(line:match("([%d%.]+)"))
+                if svTime then
+                    table.insert(svChanges, {time = svTime, sv = tonumber(svValue)})
+                end
+            end
+        end
     end
     totalNotes = #notes -- Update total notes count
 end
@@ -255,6 +262,13 @@ function game.update(dt)
     end
 
     songTime = songTime + dt
+
+    -- Adjust note speed based on SV changes
+    for i = 1, #svChanges do
+        if songTime >= svChanges[i].time then
+            noteSpeed = settings.getNoteSpeed() * svChanges[i].sv
+        end
+    end
 
     for i = #notes, 1, -1 do
         local note = notes[i]
@@ -560,6 +574,16 @@ function updateAccuracy()
             break
         end
     end
+end
+
+function increaseScrollVelocity()
+    local currentVelocity = settings.getScrollVelocity()
+    settings.setScrollVelocity(currentVelocity + 0.1)
+end
+
+function decreaseScrollVelocity()
+    local currentVelocity = settings.getScrollVelocity()
+    settings.setScrollVelocity(math.max(currentVelocity - 0.1, 0.1))  -- Don't allow it to go below 0.1
 end
 
 function game.mousepressed(x, y, button)
