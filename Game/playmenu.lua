@@ -14,6 +14,7 @@ local EnableFPS = settings.getEnableFPS()
 local currentMusic = nil  -- Track the currently playing music
 local ModifiersVisible = false
 local activeModifiers = {}
+local chosenBackground = nil
 local AllModifiers = {
     "Sudden Death",
     "No Fail",
@@ -92,23 +93,22 @@ end
 
 function drawModifiers()
     love.graphics.setColor(0, 0, 0, 0.5)  -- Set color to black with 50% opacity
-            love.graphics.rectangle("fill", love.graphics.getWidth() - 200, 0, 200, love.graphics.getHeight())
-
-            -- Draw the modifier buttons
-            love.graphics.setColor(1, 1, 1, 1)  -- Set color to white
-            local modifierStartY = 100
-            local modifierHeight = 40
-            for i, modifier in ipairs(AllModifiers) do
-                local modifierY = modifierStartY + (i - 1) * (modifierHeight + 10)
-                if activeModifiers[modifier] then
-                    love.graphics.setColor(0.2, 0.8, 0.2, 1)  -- Green for active modifiers
-                else
-                    love.graphics.setColor(1, 1, 1, 1)  -- White for inactive modifiers
-                end
-                love.graphics.rectangle("fill", love.graphics.getWidth() - 190, modifierY, 180, modifierHeight)
-                love.graphics.setColor(0, 0, 0, 1)  -- Black text color
-                love.graphics.printf(modifier, love.graphics.getWidth() - 190, modifierY + 10, 180, "center")
-            end
+    love.graphics.rectangle("fill", love.graphics.getWidth() - 200, 0, 200, love.graphics.getHeight())
+    -- Draw the modifier buttons
+    love.graphics.setColor(1, 1, 1, 1)  -- Set color to white
+    local modifierStartY = 100
+    local modifierHeight = 40
+    for i, modifier in ipairs(AllModifiers) do
+        local modifierY = modifierStartY + (i - 1) * (modifierHeight + 10)
+        if activeModifiers[modifier] then
+            love.graphics.setColor(0.2, 0.8, 0.2, 1)  -- Green for active modifiers
+        else
+            love.graphics.setColor(1, 1, 1, 1)  -- White for inactive modifiers
+        end
+            love.graphics.rectangle("fill", love.graphics.getWidth() - 190, modifierY, 180, modifierHeight)
+            love.graphics.setColor(0, 0, 0, 1)  -- Black text color
+            love.graphics.printf(modifier, love.graphics.getWidth() - 190, modifierY + 10, 180, "center")
+     end
 end
 
 function drawScoreBreakdown()
@@ -137,16 +137,18 @@ function drawSearchBar()
 end
 
 function drawPlaymenu()
-    love.graphics.setBackgroundColor(0.2, 0.2, 0.2) -- Dark background
+    love.graphics.setBackgroundColor(0.2,0.2,0.2)
     love.graphics.setColor(0.1, 0.1, 0.1)
     love.graphics.rectangle("fill", 0, love.graphics.getHeight() - 725, love.graphics.getWidth(), love.graphics.getHeight() - 600)
     love.graphics.rectangle("fill", 0, love.graphics.getHeight() - 100, love.graphics.getWidth(), love.graphics.getHeight() - 600)
 
     if scoreBreakdown then
         drawScoreBreakdown()
-    elseif ModifiersVisible then
-        drawModifiers()
     else
+        if ModifiersVisible then
+        drawModifiers()
+        end
+
         drawSearchBar()
 
         -- Filtered options based on search query
@@ -189,7 +191,7 @@ function drawSongs()
             else
                 love.graphics.setColor(1, 1, 1, 1)
             end
-
+            
             love.graphics.rectangle("fill", love.graphics.getWidth() / 4, bgY, love.graphics.getWidth() / 2, 80)
             
             love.graphics.setColor(0, 0, 0, 1)
@@ -233,7 +235,7 @@ function playmenu.mousepressed(x, y, button)
         end
     else
         if button == 1 then  -- Left mouse button
-            -- Check if any modifier buttons were clicked
+            -- check if mouse is over Modifiers button
             local modifiersButtonX = love.graphics.getWidth() - 100
             local modifiersButtonY = love.graphics.getHeight() - 100
             local modifiersButtonWidth = 80
@@ -265,16 +267,16 @@ function playmenu.mousepressed(x, y, button)
             local startY = 100
             local indexClicked = math.floor((y - startY) / 100) + 1 + scrollOffset
 
-            if indexClicked >= 1 and indexClicked <= #mapsToDisplay then
+            if indexClicked >= 1 and indexClicked <= #filteredOptions then
                 if selectedOption == indexClicked then
                     -- If the same map is clicked again, start the game
-                    local selected = mapsToDisplay[selectedOption]
+                    local selected = filteredOptions[selectedOption]
                     stopMusic()
                     startGame(selected.chart, selected.music, selected.background)
                 else
                     -- Select a new map and play its music
                     selectedOption = indexClicked
-                    local selected = mapsToDisplay[selectedOption]
+                    local selected = filteredOptions[selectedOption]
                     menu.stopMusic()
                     playMusic(selected.music)
                 end

@@ -17,7 +17,7 @@ local categories = {"Audio", "Gameplay", "Display", "General"}
 local options = {
     Audio = {"Volume"},
     Gameplay = {"Note Speed", "Note Size", "Skins"},
-    Display = {"Background Dim", "Rating Effect Size", "Fullscreen", "Enable FPS"},
+    Display = {"Background Dim", "Rating Effect Size", "Fullscreen", "Enable FPS", "Show Character"},
     General = {"Language"}
 }
 local selectedCategory = "Audio"
@@ -31,6 +31,7 @@ local skins = {}
 local selectedSkin = 1
 local backgroundDim = 0.5 -- Default dim value
 local isFullscreen = false -- Default fullscreen value
+local character = true
 local enableFPS = false -- Default FPS display value
 local selectedLanguage = "en" -- Default language
 
@@ -62,6 +63,7 @@ local function saveSettings()
         RatingEffectImageSize = RatingEffectImageSize,
         isFullscreen = isFullscreen,
         enableFPS = enableFPS, -- Save the FPS setting
+        character = character,
         selectedLanguage = selectedLanguage -- Save the selected language
     }
 
@@ -90,6 +92,7 @@ local function loadSettings()
                     RatingEffectImageSize = data.RatingEffectImageSize or RatingEffectImageSize
                     isFullscreen = data.isFullscreen or isFullscreen
                     enableFPS = data.enableFPS or enableFPS -- Load the FPS setting
+                    character = data.character or character
                     selectedLanguage = data.selectedLanguage or selectedLanguage -- Load the selected language
                     if selectedLanguage == "jp" then
                         local japaneseFont = love.graphics.newFont("Fonts/NotoSansCJKjp-Regular.otf", 24)  -- Adjust size as needed
@@ -166,6 +169,8 @@ function settings.draw()
             value = enableFPS and getTranslation("On") or getTranslation("Off")
         elseif option == "Language" then
             value = selectedLanguage
+        elseif option == "Show Character" then
+            value = character and getTranslation("On") or getTranslation("Off")
         end
 
         local translatedOption = getTranslation(option)
@@ -238,6 +243,8 @@ function adjustSettingValue(direction)
     elseif options[selectedCategory][selectedOption] == "Fullscreen" then
         isFullscreen = not isFullscreen
         love.window.setFullscreen(isFullscreen)
+    elseif options[selectedCategory][selectedOption] == "Show Character" then
+        character = not character
     elseif options[selectedCategory][selectedOption] == "Enable FPS" then
         enableFPS = not enableFPS
     elseif options[selectedCategory][selectedOption] == "Language" then
@@ -301,6 +308,10 @@ end
 
 function settings.getSelectedLanguage()
     return selectedLanguage
+end
+
+function settings.getCharacterVis()
+    return character
 end
 
 function settings.getTranslation(key)

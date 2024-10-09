@@ -6,6 +6,7 @@ local notes = {}
 local noteSpeed = settings.getNoteSpeed()
 local noteSize = settings.getNoteSize()
 local EnableFPS = settings.getEnableFPS()
+local character = settings.getCharacterVis()
 local hitboxSize = 40 -- Increase hitbox size without changing note size
 local hitLineY = 500
 local songTime = 0
@@ -165,6 +166,7 @@ function game.start(chartFile, musicFile, callback, backgroundFile)
         background = love.graphics.newImage(backgroundFile)
     end
     noteSpeed = settings.getNoteSpeed()
+    character = settings.getCharacterVis()
     noteSize = settings.getNoteSize()
     RatingEffectImageSize = settings.getRatingSize()
     EnableFPS = settings.getEnableFPS()
@@ -193,15 +195,6 @@ function game.start(chartFile, musicFile, callback, backgroundFile)
     goodImage = love.graphics.newImage("skins/" .. selectedSkin .. "/Good.png")
     okayImage = love.graphics.newImage("skins/" .. selectedSkin .. "/Okay.png")
     badImage = love.graphics.newImage("skins/" .. selectedSkin .. "/Bad.png")
-
-    -- Check if the modchart file exists in the same directory as the chart file
-    local chartDirectory = chartFile:match("(.*/)")
-    local modchartFile = chartDirectory and (chartDirectory .. "modchart.lua")
-    if modchartFile and love.filesystem.getInfo(modchartFile) then
-        -- Load and apply the modchart file
-        local modchart = love.filesystem.load(modchartFile)
-        modchart() -- Execute the modchart script
-    end
 end
 
 function loadChart(filename)
@@ -332,8 +325,10 @@ function game.draw()
     love.graphics.setColor(1, 1, 1, 1) -- Reset color
 
     -- Draw the character
-    drawCharacter()
-    
+    if character == true then
+        drawCharacter()
+    end
+
     if activeModifiers["Hidden"] then
         -- do nothing
     else
