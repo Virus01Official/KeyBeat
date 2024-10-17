@@ -22,7 +22,7 @@ You can support our further development through our Ko-Fi page
 ### Contact
 You can contact us through any of those ways:
 
-Twitter: https://x.com/KeyBeatGame
+BlueSky: https://keybeat.bsky.social
 
 Discord: https://discord.gg/3gNWTAZSh4
 
