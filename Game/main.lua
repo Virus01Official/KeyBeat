@@ -9,7 +9,7 @@ local credits = require("credits")
 local charteditor = require("charteditor")
 local joining = require("joining")
 
-version = "BETA"
+version = "1.0"
 
 gameState = "intro"  -- make gameState global for access in other modules
 
