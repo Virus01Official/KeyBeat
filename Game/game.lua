@@ -405,7 +405,7 @@ function game.draw()
 
     love.graphics.print("Health: " .. health, healthBarX, healthBarY - 30)
 
-    love.graphics.print(getTranslation("Press any key to hit notes!"), 10, 40)
+    love.graphics.print(getTranslation("Press any key to hit notes!"), 10, 0)
     love.graphics.print(getTranslation("Score: ") .. score, 300, love.graphics.getHeight() - 50)
     love.graphics.print(getTranslation("Misses: ") .. misses, 500, love.graphics.getHeight() - 50)
     love.graphics.print(getTranslation("Combo: ") .. combo, 700, love.graphics.getHeight() - 50)
@@ -440,16 +440,31 @@ function drawPause()
     love.graphics.setColor(1, 1, 1) -- Reset color
 end
 
-
 function drawTimeBar()
     local screenWidth = love.graphics.getWidth()
-    local barHeight = 20
-    local progress = songTime / chartEndTime
-    love.graphics.setColor(0, 0.8, 0)
-    love.graphics.rectangle("fill", 0, 0, screenWidth * progress, barHeight)
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.rectangle("line", 0, 0, screenWidth, barHeight)
-    love.graphics.print(getTranslation("Time: ") .. string.format("%.2f", songTime) .. " / " .. string.format("%.2f", chartEndTime), 10, barHeight / 2 + 5)
+    local screenHeight = love.graphics.getHeight()
+    
+    local radius = 25 -- radius of the circular timer
+    local margin = 20 -- margin from the edges of the screen
+    
+    -- Set center of the circle to the top-right corner, accounting for radius and margin
+    local centerX = screenWidth - radius - margin
+    local centerY = radius + margin
+
+    local progress = chartEndTime > 0 and (songTime / chartEndTime) or 0
+    local angle = progress * 2 * math.pi -- convert progress to radians (full circle is 2π)
+    
+    -- Draw the background circle (empty part)
+    love.graphics.setColor(1, 1, 1) -- background color
+    love.graphics.circle("fill", centerX, centerY, radius)
+
+    -- Draw the progress arc
+    love.graphics.setColor(0.2, 0.2, 0.2) -- progress color
+    love.graphics.arc("fill", centerX, centerY, radius, -math.pi / 2, -math.pi / 2 + angle)
+
+    -- Draw the outline of the circle
+    love.graphics.setColor(1, 1, 1) -- outline color
+    love.graphics.circle("line", centerX, centerY, radius)
 end
 
 function game.keypressed(key)
