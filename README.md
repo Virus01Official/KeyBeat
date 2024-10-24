@@ -26,5 +26,5 @@ BlueSky: https://keybeat.bsky.social
 
 Discord: https://discord.gg/3gNWTAZSh4
 
-Support Twitter: https://moonwavestudios.bsky.social
+Support BlueSky: https://moonwavestudios.bsky.social
 
