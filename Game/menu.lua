@@ -269,6 +269,9 @@ function menu.keypressed(key)
             end
         elseif key == "escape" then
             love.event.quit()
+        elseif key == "q" then -- For testing only, REMOVE IN THE FULL VERSION
+            gotoChartEditor()
+            currentMusic:stop()
         end
     end
 end
