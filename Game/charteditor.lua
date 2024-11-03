@@ -52,10 +52,8 @@ function charteditor.saveChart()
 end
 
 function charteditor.update(dt)
-    if not isEditing then
-        if music and music:isPlaying() then
-            songTime = songTime + dt
-        end
+    if music and music:isPlaying() then
+        songTime = love.timer.getTime() - musicStartTime
     end
 end
 
@@ -146,7 +144,7 @@ end
 
 -- Function to start editing a song by name
 function charteditor.startEditing(songName)
-    local songPath = songsFolder .. "/" .. songName .. "/" .. "music.mp3" -- More files supported very soon, this is just for testing
+    local songPath = songsFolder .. "/" .. songName .. "/" .. "music.mp3"
     if love.filesystem.getInfo(songPath) then
         music = love.audio.newSource(songPath, "stream")
         currentSongName = songName
