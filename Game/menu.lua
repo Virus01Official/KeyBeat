@@ -63,7 +63,7 @@ end
 
 function menu.load()
     randomIndex = love.math.random(1, #randomTips)
-    options = {getTranslation("Start Game"), getTranslation("Settings"), getTranslation("Credits")}
+    options = {getTranslation("Start Game"), getTranslation("Settings"), getTranslation("Credits"), getTranslation("Chart Editor")}
     showButtons = false
 
     -- Load all images from the menuBackgrounds folder
@@ -240,6 +240,9 @@ function menu.mousepressed(x, y, button)
                         goToSettings()
                     elseif options[selectedOption] == getTranslation("Credits") then
                         goToCredits()
+                    elseif options[selectedOption] == getTranslation("Chart Editor") then
+                        gotoChartEditor()
+                        currentMusic:stop()
                     end
                 end
             end
@@ -266,12 +269,12 @@ function menu.keypressed(key)
                 goToSettings()
             elseif options[selectedOption] == getTranslation("Credits") then
                 goToCredits()
+            elseif options[selectedOption] == getTranslation("Chart Editor") then
+                gotoChartEditor()
+                currentMusic:stop()
             end
         elseif key == "escape" then
             love.event.quit()
-        elseif key == "q" then -- For testing only, REMOVE IN THE FULL VERSION
-            gotoChartEditor()
-            currentMusic:stop()
         end
     end
 end
