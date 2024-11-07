@@ -17,7 +17,6 @@ function love.load()
     love.graphics.setFont(love.graphics.newFont(20))
     hitsound = love.audio.newSource("assets/hitsound.ogg", "static")
     miss = love.audio.newSource("assets/miss.ogg", "static")
-    cursor = love.mouse.newCursor("assets/cursor.png", 0, 0)
     logo = love.graphics.newImage("assets/logo.png")
     introSFX = love.audio.newSource("assets/Intro.mp3", "static")
     intro.load()
@@ -65,7 +64,6 @@ end
 function love.draw()
     if gameState == "menu" then
         menu.draw()
-        love.mouse.setCursor(cursor)
     elseif gameState == "game" then
         game.draw()
     elseif gameState == "settings" then
