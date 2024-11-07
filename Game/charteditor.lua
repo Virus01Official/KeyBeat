@@ -36,7 +36,8 @@ function charteditor.loadChart(filename)
                 -- Handle regular note line
                 local time, x, holdTime = line:match("([%d%.]+) ([%d%.]+) ([%d%.]+)")
                 if time and x and holdTime then
-                    table.insert(chart, {time = tonumber(time), x = tonumber(x), hold = holdTime > 0, holdTime = tonumber(holdTime), sv = svValue})
+                    holdTime = tonumber(holdTime) -- Convert holdTime to a number
+                    table.insert(chart, {time = tonumber(time), x = tonumber(x), hold = holdTime > 0, holdTime = holdTime, sv = svValue})
                 end
             end
         end
@@ -78,11 +79,12 @@ function charteditor.draw()
     love.graphics.print("Scroll Velocity (SV): " .. svValue, 10, 50)
     love.graphics.print("Press '[' or ']' to adjust SV", 10, 70)
     love.graphics.print("Press 'P' to play/pause preview", 10, 90)
+    love.graphics.print("Press Left/Right Arrow to scroll the chart", 10, 110)  -- Added scroll instructions
     love.graphics.line(0, hitLineY, love.graphics.getWidth(), hitLineY)
 
     if isEnteringSongName then
-        love.graphics.print("Enter Song Name: " .. songNameInput, 10, 110)
-        love.graphics.print("Press Enter to confirm song name", 10, 130)
+        love.graphics.print("Enter Song Name: " .. songNameInput, 10, 130)
+        love.graphics.print("Press Enter to confirm song name", 10, 150)
     else
         for i, note in ipairs(chart) do
             local y = hitLineY - (note.time - songTime) * noteSpeed * note.sv
@@ -147,7 +149,25 @@ function charteditor.keypressed(key)
             svValue = math.max(0, svValue - 0.1) -- Decrease SV
         elseif key == "]" then
             svValue = math.min(1.0, svValue + 0.1) -- Increase SV
+        elseif key == "left" then
+            songTime = math.max(0, songTime - 1)  -- Decrease song time to scroll left
+            charteditor.updateMusicPosition()
+        elseif key == "right" then
+            songTime = songTime + 1  -- Increase song time to scroll right
+            charteditor.updateMusicPosition()
         end
+    end
+end
+
+function charteditor.updateMusicPosition()
+    if music then
+        local wasPlaying = music:isPlaying()
+        music:pause()  -- Pause music to safely adjust position
+        music:seek(songTime)  -- Set music playback to match songTime
+        if wasPlaying then
+            music:play()  -- Resume playback if it was already playing
+        end
+        musicStartTime = love.timer.getTime() - songTime  -- Adjust start time reference
     end
 end
 
@@ -165,6 +185,7 @@ end
 function charteditor.startEditing(songName)
     local songPath = songsFolder .. "/" .. songName .. "/music.mp3"
     local songPathOgg = songsFolder .. "/" .. songName .. "/music.ogg"
+    local chartPath = songsFolder .. "/" .. songName .. "/chart.txt"
     if love.filesystem.getInfo(songPath) then
         music = love.audio.newSource(songPath, "stream")
         currentSongName = songName
@@ -181,6 +202,13 @@ function charteditor.startEditing(songName)
         print("Editing mode started for song: " .. songName)
     else
         print("Song file not found: " .. songPath)
+    end
+
+    if love.filesystem.getInfo(chartPath) then
+        -- Load Chart UwU
+        charteditor.loadChart(chartPath)
+    else
+        print("Chart not found")
     end
 end
 
