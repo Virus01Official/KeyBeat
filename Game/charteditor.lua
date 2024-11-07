@@ -163,8 +163,16 @@ end
 
 -- Function to start editing a song by name
 function charteditor.startEditing(songName)
-    local songPath = songsFolder .. "/" .. songName .. "/" .. "music.mp3"
+    local songPath = songsFolder .. "/" .. songName .. "/music.mp3"
+    local songPathOgg = songsFolder .. "/" .. songName .. "/music.ogg"
     if love.filesystem.getInfo(songPath) then
+        music = love.audio.newSource(songPath, "stream")
+        currentSongName = songName
+        music:setLooping(false)
+        songTime = 0
+        isEditing = true
+        print("Editing mode started for song: " .. songName)
+    elseif love.filesystem.getInfo(songPathOgg) then
         music = love.audio.newSource(songPath, "stream")
         currentSongName = songName
         music:setLooping(false)
