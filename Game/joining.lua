@@ -1,6 +1,6 @@
 local joining = {}
 local settings = require("settings")
-local PPandToS = "https://sites.google.com/view/privacypolicyandtos/privacy-policy"
+local PPandToS = "https://moonwave-website.vercel.app/terms.html"
 
 local function getTranslation(key)
     return settings.getTranslation(key)
