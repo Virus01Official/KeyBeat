@@ -1,15 +1,14 @@
 -- main.lua
-
 local menu = require("menu")
 local game = require("game")
 local settings = require("settings")
 local playmenu = require("playmenu")
+local charteditor = require("charteditor")
 local intro = require("intro")
 local credits = require("credits")
-local charteditor = require("charteditor")
 local joining = require("joining")
 
-version = "1.0"
+currentVersion = "1.0"
 
 gameState = "intro"  -- make gameState global for access in other modules
 
@@ -54,10 +53,10 @@ function love.update(dt)
         intro.update(dt)
     elseif gameState == "credits" then
         credits.update(dt)
-    elseif gameState == "charteditor" then
-        charteditor.update(dt)
     elseif gameState == "joining" then
         joining.update(dt)
+    elseif gameState == "charteditor" then
+        charteditor.update(dt)
     end
 end
 
@@ -74,10 +73,10 @@ function love.draw()
         intro.draw()
     elseif gameState == "credits" then
         credits.draw()
-    elseif gameState == "charteditor" then
-        charteditor.draw()
     elseif gameState == "joining" then
         joining.draw()
+    elseif gameState == "charteditor" then
+        charteditor.draw()
     end
 end
 
@@ -131,8 +130,6 @@ end
 function love.textinput(text) 
     if gameState == "playmenu" then
         playmenu.textinput(text)
-    elseif gameState == "charteditor" then
-        charteditor.textinput(text)
     end
 end
 
@@ -168,7 +165,7 @@ function gotoJoining()
     joining.load()
 end
 
-function goToChartEditor()
+function gotoChartEditor()
     gameState = "charteditor"
     charteditor.load()
 end

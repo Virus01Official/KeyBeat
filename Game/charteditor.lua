@@ -17,6 +17,7 @@ local hitLineY = 500
 local currentSongName = nil
 local songNameInput = "" -- Text input for song name
 local isEnteringSongName = true -- Controls if user is in text input mode
+local capsLockEnabled = false
 
 function charteditor.load()
     noteSpeed = settings.getNoteSpeed()
@@ -121,6 +122,16 @@ function charteditor.removeNoteAt(x, y)
 end
 
 function charteditor.keypressed(key)
+    if key == "escape" then
+        -- Stop editing and return to menu
+        isEditing = false
+        isEnteringSongName = true
+        if music then
+            music:stop() -- Stop any music that might be playing
+        end
+        backToMenu()
+    end
+
     if isEnteringSongName then
         if key == "return" then
             charteditor.startEditing(songNameInput)
@@ -128,8 +139,18 @@ function charteditor.keypressed(key)
             songNameInput = ""
         elseif key == "backspace" then
             songNameInput = songNameInput:sub(1, -2)
+        elseif key == "capslock" then
+            -- Toggle Caps Lock state
+            capsLockEnabled = not capsLockEnabled
+        elseif key == "space" then
+            songNameInput = songNameInput .. " " 
         elseif #key == 1 then
-            songNameInput = songNameInput .. key
+            -- Add character, adjusting case based on Caps Lock
+            if capsLockEnabled then
+                songNameInput = songNameInput .. key:upper()
+            else
+                songNameInput = songNameInput .. key
+            end
         end
     else
         if key == "p" then
