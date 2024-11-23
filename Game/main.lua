@@ -1,4 +1,3 @@
--- main.lua
 local menu = require("menu")
 local game = require("game")
 local settings = require("settings")
@@ -11,6 +10,12 @@ local joining = require("joining")
 currentVersion = "1.0"
 
 gameState = "intro"  -- make gameState global for access in other modules
+
+--[[
+    Achievements and leaderboards will probably arrive soon enough to KeyBeat
+    I just have to make sure that Moonwave Website can run the API's 
+    LMAO so much work and so little time :P
+]]
 
 function love.load()
     love.graphics.setFont(love.graphics.newFont(20))
