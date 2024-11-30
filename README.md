@@ -8,7 +8,7 @@ Download .zip file and unpack it then open a KeyBeat.exe file and you're ready t
 
 ## Status
 
-This project is under constant development, but we do our best to keep things in a stable state. This project will continue to evolve until we eventually reach the point where KeyBeat is gonna be ready for release.
+This project is no longer being developed.
 
 ## To-Do list
 You can access the to-do list [here](https://github.com/users/Virus01Official/projects/17/views/1).
