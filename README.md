@@ -74,4 +74,4 @@ See [LICENSE](LICENSE) for details.
 
 ---
 
-Enjoy the game! For bug reports or suggestions, open an issue or contact
+Enjoy the game! For bug reports or suggestions, open an issue
