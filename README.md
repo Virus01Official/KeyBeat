@@ -1,4 +1,4 @@
-# Rhythm Game
+# KeyBeat
 
 A simple rhythm game built with [LÖVE (Love2D)](https://love2d.org/). Hit notes in time with the music, customize your experience, and even create your own charts!
 
