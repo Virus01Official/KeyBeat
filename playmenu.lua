@@ -264,9 +264,6 @@ function drawPlaymenu()
     love.graphics.rectangle("fill", 0, 0, currentWidth, 100 * scaleY, 0, 0, 18 * scaleY, 18 * scaleY)
     love.graphics.rectangle("fill", 0, currentHeight - 100 * scaleY, currentWidth, 100 * scaleY, 18 * scaleY, 18 * scaleY)
 
-    if scoreBreakdown then
-        drawScoreBreakdown()
-    else
         if ModifiersVisible then
             drawModifiers()
         end
@@ -280,7 +277,6 @@ function drawPlaymenu()
 
         drawSongs()
         drawModifierButton()
-    end
 end
 
 function playmenu.update(dt)
