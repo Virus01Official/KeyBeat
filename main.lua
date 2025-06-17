@@ -6,7 +6,6 @@ local playmenu = require("playmenu")
 local charteditor = require("charteditor")
 local intro = require("intro")
 local credits = require("credits")
-local joining = require("joining")
 
 currentVersion = "1.1"
 
