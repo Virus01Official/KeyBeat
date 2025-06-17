@@ -140,39 +140,75 @@ end
 
 function settings.update(dt)
     updateScreenScale()
-    
     local mouseX, mouseY = love.mouse.getPosition()
     hoveredOption = nil
-    local yPosition = 100 * scaleY
-    
+
+    -- Match draw() hitbox logic
+    local panelW = currentWidth * 0.7
+    local panelH = currentHeight * 0.7
+    local panelX = (currentWidth - panelW) / 2
+    local panelY = (currentHeight - panelH) / 2
+    local optionX = panelX + panelW * 0.05
+    local optionW = panelW * 0.9
+    local yPosition = panelY + 80 * scaleY
+    local optionHeight = 54 * scaleY
+    local optionSpacing = 12 * scaleY
+
     for i, option in ipairs(options[selectedCategory]) do
-        if mouseY >= yPosition and mouseY <= yPosition + 50 * scaleY then
+        if mouseX >= optionX and mouseX <= optionX + optionW and
+           mouseY >= yPosition and mouseY <= yPosition + optionHeight then
             hoveredOption = i
             break
         end
-        yPosition = yPosition + 50 * scaleY
+        yPosition = yPosition + optionHeight + optionSpacing
     end
 end
 
+-- Modern color palette (reuse from playmenu for consistency)
+local colors = {
+    background = {0.13, 0.15, 0.18},
+    panel = {0.18, 0.20, 0.23, 0.95},
+    accent = {0.22, 0.60, 0.86, 1},
+    accentLight = {0.35, 0.75, 1.0, 1},
+    text = {0.95, 0.97, 1.0, 1},
+    shadow = {0, 0, 0, 0.25},
+    selected = {0.22, 0.60, 0.86, 0.15},
+    hover = {0.22, 0.60, 0.86, 0.10},
+}
+
+local function drawRoundedRectWithShadow(mode, x, y, w, h, rx, ry)
+    love.graphics.setColor(colors.shadow)
+    love.graphics.rectangle(mode, x+4, y+4, w, h, rx, ry)
+    love.graphics.setColor(colors.panel)
+    love.graphics.rectangle(mode, x, y, w, h, rx, ry)
+end
+
 function settings.draw()
-    love.graphics.setBackgroundColor(0.2, 0.2, 0.2)
-    
-    -- Draw background panels with scaling
-    love.graphics.setColor(0.1, 0.1, 0.1)
-    love.graphics.rectangle("fill", 0, currentHeight - 725 * scaleY, currentWidth, 125 * scaleY)
-    love.graphics.rectangle("fill", 0, currentHeight - 100 * scaleY, currentWidth, 100 * scaleY)
-    
-    -- Set scaled font
-    local fontSize = 24 * math.min(scaleX, scaleY)
+    love.graphics.setBackgroundColor(colors.background)
+
+    -- Draw main settings panel
+    local panelW = currentWidth * 0.7
+    local panelH = currentHeight * 0.7
+    local panelX = (currentWidth - panelW) / 2
+    local panelY = (currentHeight - panelH) / 2
+    drawRoundedRectWithShadow("fill", panelX, panelY, panelW, panelH, 24 * scaleY, 24 * scaleY)
+
+    -- Title
+    love.graphics.setColor(colors.accent)
+    local fontSize = 32 * math.min(scaleX, scaleY)
     local font = love.graphics.newFont("Fonts/NotoSans-Regular.ttf", fontSize)
     love.graphics.setFont(font)
-    
-    -- Draw title
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(getTranslation("Settings") .. ":", 0, 25 * scaleY, currentWidth, "center")
-    
+    love.graphics.printf(getTranslation("Settings"), panelX, panelY + 20 * scaleY, panelW, "center")
+
     -- Draw options
-    local yPosition = 100 * scaleY
+    local optionFont = love.graphics.newFont("Fonts/NotoSans-Regular.ttf", 22 * math.min(scaleX, scaleY))
+    love.graphics.setFont(optionFont)
+    local yPosition = panelY + 80 * scaleY
+    local optionHeight = 54 * scaleY
+    local optionSpacing = 12 * scaleY
+    local optionW = panelW * 0.9
+    local optionX = panelX + panelW * 0.05
+
     for i, option in ipairs(options[selectedCategory]) do
         local value = ""
         if option == "Volume" then
@@ -200,50 +236,91 @@ function settings.draw()
         end
 
         local translatedOption = getTranslation(option)
+        -- Option background
         if i == selectedOption then
-            love.graphics.setColor(1, 1, 0)
-            love.graphics.printf("-> " .. translatedOption .. ": " .. value, 0, yPosition, currentWidth, "center")
+            love.graphics.setColor(colors.selected)
         elseif i == hoveredOption then
-            love.graphics.setColor(0.8, 0.8, 0.8)
-            love.graphics.printf(translatedOption .. ": " .. value, 0, yPosition, currentWidth, "center")
+            love.graphics.setColor(colors.hover)
         else
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.printf(translatedOption .. ": " .. value, 0, yPosition, currentWidth, "center")
+            love.graphics.setColor(0, 0, 0, 0)
         end
-        yPosition = yPosition + 50 * scaleY
+        love.graphics.rectangle("fill", optionX, yPosition, optionW, optionHeight, 14 * scaleY, 14 * scaleY)
+
+        -- Option border
+        if i == selectedOption then
+            love.graphics.setColor(colors.accent)
+            love.graphics.setLineWidth(3)
+            love.graphics.rectangle("line", optionX, yPosition, optionW, optionHeight, 14 * scaleY, 14 * scaleY)
+        end
+
+        -- Option text
+        love.graphics.setColor(colors.text)
+        love.graphics.printf(translatedOption .. ": " .. value, optionX + 12 * scaleX, yPosition + 12 * scaleY, optionW - 24 * scaleX, "left")
+
+        yPosition = yPosition + optionHeight + optionSpacing
     end
 
     -- Draw category buttons
-    local buttonY = currentHeight - 70 * scaleY
-    local buttonWidth = currentWidth / #categories
+    local buttonY = panelY + panelH - 70 * scaleY
+    local buttonW = panelW / #categories
+    local buttonH = 44 * scaleY
     for i, category in ipairs(categories) do
+        local bx = panelX + (i-1)*buttonW
+        -- Button background
         if category == selectedCategory then
-            love.graphics.setColor(0.8, 0.8, 0.8)
+            love.graphics.setColor(colors.accent)
+        elseif love.mouse.getY() >= buttonY and love.mouse.getY() <= buttonY + buttonH and
+               love.mouse.getX() >= bx and love.mouse.getX() <= bx + buttonW then
+            love.graphics.setColor(colors.hover)
         else
-            love.graphics.setColor(0.6, 0.6, 0.6)
+            love.graphics.setColor(colors.panel)
         end
-        love.graphics.rectangle("fill", (i-1)*buttonWidth, buttonY, buttonWidth, 50 * scaleY)
-        love.graphics.setColor(0, 0, 0)
-        love.graphics.printf(getTranslation(category), (i-1)*buttonWidth, buttonY + 15 * scaleY, buttonWidth, "center")
+        love.graphics.rectangle("fill", bx, buttonY, buttonW, buttonH, 12 * scaleY, 12 * scaleY)
+        -- Button text
+        love.graphics.setColor(colors.text)
+        love.graphics.printf(getTranslation(category), bx, buttonY + 10 * scaleY, buttonW, "center")
     end
 end
 
 function settings.mousepressed(x, y, button)
-    local buttonY = currentHeight - 70 * scaleY
-    if y >= buttonY then
-        local buttonWidth = currentWidth / #categories
-        local index = math.floor(x / buttonWidth) + 1
+    -- Match panel dimensions from settings.draw()
+    local panelW = currentWidth * 0.7
+    local panelH = currentHeight * 0.7
+    local panelX = (currentWidth - panelW) / 2
+    local panelY = (currentHeight - panelH) / 2
+    local buttonY = panelY + panelH - 70 * scaleY
+    local buttonW = panelW / #categories
+    local buttonH = 44 * scaleY
+
+    -- Check if click is inside the button bar
+    if y >= buttonY and y <= buttonY + buttonH and x >= panelX and x <= panelX + panelW then
+        local index = math.floor((x - panelX) / buttonW) + 1
         if index >= 1 and index <= #categories then
             selectedCategory = categories[index]
             selectedOption = 1
+            return
         end
-    elseif hoveredOption then
-        selectedOption = hoveredOption
-        if button == 1 then
-            adjustSettingValue("decrease")
-        elseif button == 2 then
-            adjustSettingValue("increase")
+    end
+
+    -- Match draw() hitbox logic for options
+    local optionX = panelX + panelW * 0.05
+    local optionW = panelW * 0.9
+    local yPosition = panelY + 80 * scaleY
+    local optionHeight = 54 * scaleY
+    local optionSpacing = 12 * scaleY
+
+    for i, option in ipairs(options[selectedCategory]) do
+        if x >= optionX and x <= optionX + optionW and
+           y >= yPosition and y <= yPosition + optionHeight then
+            selectedOption = i
+            if button == 1 then
+                adjustSettingValue("decrease")
+            elseif button == 2 then
+                adjustSettingValue("increase")
+            end
+            return
         end
+        yPosition = yPosition + optionHeight + optionSpacing
     end
 end
 

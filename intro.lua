@@ -33,11 +33,7 @@ function intro.update(dt)
         alpha = 1 -- Fully visible
     else
         introFinished = true
-        if love.filesystem.getInfo("terms_accepted") then
             backToMenu()
-        else
-            gotoJoining()
-        end
     end
 end
 

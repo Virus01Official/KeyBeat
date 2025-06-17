@@ -8,7 +8,7 @@ local intro = require("intro")
 local credits = require("credits")
 local joining = require("joining")
 
-currentVersion = "1.0"
+currentVersion = "1.1"
 
 gameState = "intro"  -- make gameState global for access in other modules
 

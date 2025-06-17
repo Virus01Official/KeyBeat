@@ -108,72 +108,161 @@ function loadSongs()
     end
 end
 
-function drawModifiers()
-    local modifiersWidth = 200 * scaleX
-    local modifierHeight = 40 * scaleY
-    local modifierSpacing = 10 * scaleY
-    
-    love.graphics.setColor(0, 0, 0, 0.5)
-    love.graphics.rectangle("fill", currentWidth - modifiersWidth, 0, modifiersWidth, currentHeight)
-    
-    local modifierStartY = 100 * scaleY
-    for i, modifier in ipairs(AllModifiers) do
-        local modifierY = modifierStartY + (i - 1) * (modifierHeight + modifierSpacing)
-        if activeModifiers[modifier] then
-            love.graphics.setColor(0.2, 0.8, 0.2, 1)
-        else
-            love.graphics.setColor(1, 1, 1, 1)
-        end
-        love.graphics.rectangle("fill", currentWidth - modifiersWidth + 10 * scaleX, modifierY, 
-                              modifiersWidth - 20 * scaleX, modifierHeight)
-        love.graphics.setColor(0, 0, 0, 1)
-        love.graphics.printf(modifier, currentWidth - modifiersWidth + 10 * scaleX, modifierY + 10 * scaleY, 
-                           modifiersWidth - 20 * scaleX, "center")
-    end
-end
+-- Modern color palette
+local colors = {
+    background = {0.13, 0.15, 0.18},
+    panel = {0.18, 0.20, 0.23, 0.95},
+    accent = {0.22, 0.60, 0.86, 1},
+    accentLight = {0.35, 0.75, 1.0, 1},
+    text = {0.95, 0.97, 1.0, 1},
+    shadow = {0, 0, 0, 0.25},
+    selected = {0.22, 0.60, 0.86, 0.15},
+    hover = {0.22, 0.60, 0.86, 0.10},
+    modifierActive = {0.22, 0.86, 0.60, 0.25},
+}
 
-function drawScoreBreakdown()
-    local fontSize = 24 * math.min(scaleX, scaleY)
-    local font = love.graphics.newFont(fontSize)
-    love.graphics.setFont(font)
-    
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(getTranslation("Score Breakdown:"), 0, 100 * scaleY, currentWidth, "center")
-    love.graphics.printf(getTranslation("Score: ") .. scoreBreakdown.score, 0, 150 * scaleY, currentWidth, "center")
-    love.graphics.printf(getTranslation("Hits: ") .. scoreBreakdown.hits, 0, 200 * scaleY, currentWidth, "center")
-    love.graphics.printf(getTranslation("Misses: ") .. scoreBreakdown.misses, 0, 250 * scaleY, currentWidth, "center")
-    love.graphics.printf(getTranslation("Accuracy: ") .. string.format("%.2f", scoreBreakdown.accuracy) .. "%", 
-                        0, 300 * scaleY, currentWidth, "center")
-    love.graphics.printf(getTranslation("Total Notes: ") .. scoreBreakdown.totalNotes, 0, 350 * scaleY, currentWidth, "center")
-    
-    local gradeImage = love.graphics.newImage("skins/default/" .. scoreBreakdown.grade .. ".png")
-    local scaledRatingSize = RatingEffectImageSize * math.min(scaleX, scaleY)
-    local x = currentWidth / 2 - scaledRatingSize / 2
-    local y = 400 * scaleY
-    love.graphics.draw(gradeImage, x, y, 0, 
-                      scaledRatingSize / gradeImage:getWidth(), 
-                      scaledRatingSize / gradeImage:getHeight())
-
-    love.graphics.printf(getTranslation("Press SPACE to continue..."), 0, currentHeight - 50 * scaleY, currentWidth, "center")
+-- Helper for rounded rectangles with shadow
+local function drawRoundedRectWithShadow(mode, x, y, w, h, rx, ry)
+    love.graphics.setColor(colors.shadow)
+    love.graphics.rectangle(mode, x+4, y+4, w, h, rx, ry)
+    love.graphics.setColor(colors.panel)
+    love.graphics.rectangle(mode, x, y, w, h, rx, ry)
 end
 
 function drawSearchBar()
     local searchBarWidth = currentWidth / 2
-    local searchBarHeight = 30 * scaleY
+    local searchBarHeight = 36 * scaleY
     local searchBarX = currentWidth / 4
     local searchBarY = currentHeight - 75 * scaleY
-    
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.rectangle("fill", searchBarX, searchBarY, searchBarWidth, searchBarHeight)
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.printf(searchQuery, searchBarX + 5 * scaleX, searchBarY, searchBarWidth - 10 * scaleX, "left")
+
+    -- Shadow and rounded rectangle
+    drawRoundedRectWithShadow("fill", searchBarX, searchBarY, searchBarWidth, searchBarHeight, 18 * scaleY, 18 * scaleY)
+
+    -- Search icon (simple magnifier)
+    love.graphics.setColor(colors.accent)
+    local iconSize = 18 * scaleY
+    local iconX = searchBarX + 10 * scaleX
+    local iconY = searchBarY + searchBarHeight/2
+    love.graphics.circle("line", iconX, iconY, iconSize/2, 32)
+    love.graphics.line(iconX + iconSize/4, iconY + iconSize/4, iconX + iconSize, iconY + iconSize)
+
+    -- Text
+    love.graphics.setColor(colors.text)
+    local font = love.graphics.newFont(18 * math.min(scaleX, scaleY))
+    love.graphics.setFont(font)
+    local text = searchQuery == "" and "Search songs..." or searchQuery
+    local textColor = searchQuery == "" and {0.7, 0.7, 0.7, 1} or colors.text
+    love.graphics.setColor(textColor)
+    love.graphics.printf(text, iconX + iconSize + 8 * scaleX, searchBarY + 6 * scaleY, searchBarWidth - iconSize - 20 * scaleX, "left")
+end
+
+function drawSongs()
+    local startY = 120 * scaleY
+    local optionHeight = 90 * scaleY
+    local optionSpacing = 18 * scaleY
+    local optionWidth = currentWidth / 2
+    local optionX = currentWidth / 4
+
+    for i = scrollOffset + 1, math.min(scrollOffset + visibleOptions, #filteredOptions) do
+        local option = filteredOptions[i]
+        local bgY = startY + (i - scrollOffset - 1) * (optionHeight + optionSpacing)
+
+        local isMouseOver = mouseX >= optionX and mouseX <= optionX + optionWidth and
+                            mouseY >= bgY and mouseY <= bgY + optionHeight
+
+        -- Shadow and rounded rectangle
+        drawRoundedRectWithShadow("fill", optionX, bgY, optionWidth, optionHeight, 18 * scaleY, 18 * scaleY)
+
+        -- Highlight border for selected/hover
+        if i == selectedOption or isMouseOver then
+            love.graphics.setColor(colors.accent)
+            love.graphics.setLineWidth(4)
+            love.graphics.rectangle("line", optionX, bgY, optionWidth, optionHeight, 18 * scaleY, 18 * scaleY)
+        end
+
+        -- Option text
+        love.graphics.setColor(colors.text)
+        local font = love.graphics.newFont(18 * math.min(scaleX, scaleY))
+        love.graphics.setFont(font)
+        love.graphics.printf(option.name, optionX, bgY + 12 * scaleY, optionWidth, "center")
+        love.graphics.setColor(colors.accentLight)
+        love.graphics.printf("Credits: " .. option.credits, optionX, bgY + 38 * scaleY, optionWidth, "center")
+        love.graphics.setColor(colors.text)
+        love.graphics.printf("Difficulty: " .. option.difficulty, optionX, bgY + 62 * scaleY, optionWidth, "center")
+    end
+end
+
+function drawModifiers()
+    local modifiersWidth = 260 * scaleX
+    local modifierHeight = 44 * scaleY
+    local modifierSpacing = 14 * scaleY
+
+    -- Semi-transparent overlay
+    love.graphics.setColor(0, 0, 0, 0.35)
+    love.graphics.rectangle("fill", 0, 0, currentWidth, currentHeight)
+
+    -- Panel with shadow
+    local panelX = currentWidth - modifiersWidth - 24 * scaleX
+    local panelY = 80 * scaleY
+    local panelH = #AllModifiers * (modifierHeight + modifierSpacing) + 40 * scaleY
+    drawRoundedRectWithShadow("fill", panelX, panelY, modifiersWidth, panelH, 18 * scaleY, 18 * scaleY)
+
+    -- Title
+    love.graphics.setColor(colors.accent)
+    local font = love.graphics.newFont(22 * math.min(scaleX, scaleY))
+    love.graphics.setFont(font)
+    love.graphics.printf("Modifiers", panelX, panelY + 10 * scaleY, modifiersWidth, "center")
+
+    -- Modifier toggles
+    for i, modifier in ipairs(AllModifiers) do
+        local modifierY = panelY + 40 * scaleY + (i - 1) * (modifierHeight + modifierSpacing)
+        local isMouseOver = mouseX >= panelX + 12 * scaleX and mouseX <= panelX + modifiersWidth - 12 * scaleX and
+                            mouseY >= modifierY and mouseY <= modifierY + modifierHeight
+
+        -- Toggle background
+        if activeModifiers[modifier] then
+            love.graphics.setColor(colors.modifierActive)
+        elseif isMouseOver then
+            love.graphics.setColor(colors.hover)
+        else
+            love.graphics.setColor(colors.selected)
+        end
+        love.graphics.rectangle("fill", panelX + 12 * scaleX, modifierY, modifiersWidth - 24 * scaleX, modifierHeight, 12 * scaleY, 12 * scaleY)
+
+        -- Toggle border
+        love.graphics.setColor(colors.accent)
+        love.graphics.setLineWidth(2)
+        love.graphics.rectangle("line", panelX + 12 * scaleX, modifierY, modifiersWidth - 24 * scaleX, modifierHeight, 12 * scaleY, 12 * scaleY)
+
+        -- Modifier text
+        love.graphics.setColor(colors.text)
+        local font = love.graphics.newFont(18 * math.min(scaleX, scaleY))
+        love.graphics.setFont(font)
+        love.graphics.printf(modifier, panelX + 12 * scaleX, modifierY + 10 * scaleY, modifiersWidth - 24 * scaleX, "center")
+    end
+end
+
+function drawModifierButton()
+    local buttonSize = 80 * math.min(scaleX, scaleY)
+    local buttonX = currentWidth - 100 * scaleX
+    local buttonY = currentHeight - 100 * scaleY
+
+    -- Shadow and rounded rectangle
+    drawRoundedRectWithShadow("fill", buttonX, buttonY, buttonSize, buttonSize, buttonSize/2, buttonSize/2)
+
+    -- Icon
+    love.graphics.setColor(colors.accent)
+    love.graphics.draw(ModifiersButton, buttonX + 8 * scaleX, buttonY + 8 * scaleY, 0,
+        (buttonSize - 16 * scaleX) / ModifiersButton:getWidth(),
+        (buttonSize - 16 * scaleY) / ModifiersButton:getHeight())
 end
 
 function drawPlaymenu()
-    love.graphics.setBackgroundColor(0.2, 0.2, 0.2)
-    love.graphics.setColor(0.1, 0.1, 0.1)
-    love.graphics.rectangle("fill", 0, currentHeight - 725 * scaleY, currentWidth, 125 * scaleY)
-    love.graphics.rectangle("fill", 0, currentHeight - 100 * scaleY, currentWidth, 100 * scaleY)
+    love.graphics.setBackgroundColor(colors.background)
+    -- Top and bottom panels
+    love.graphics.setColor(colors.panel)
+    love.graphics.rectangle("fill", 0, 0, currentWidth, 100 * scaleY, 0, 0, 18 * scaleY, 18 * scaleY)
+    love.graphics.rectangle("fill", 0, currentHeight - 100 * scaleY, currentWidth, 100 * scaleY, 18 * scaleY, 18 * scaleY)
 
     if scoreBreakdown then
         drawScoreBreakdown()
@@ -185,58 +274,13 @@ function drawPlaymenu()
         drawSearchBar()
 
         if EnableFPS then
-            love.graphics.print("FPS: " .. love.timer.getFPS(), 10 * scaleX, 10 * scaleY)
+            love.graphics.setColor(colors.text)
+            love.graphics.print("FPS: " .. love.timer.getFPS(), 18 * scaleX, 18 * scaleY)
         end
 
         drawSongs()
         drawModifierButton()
     end
-end
-
-function drawSongs()
-    local startY = 100 * scaleY
-    local optionHeight = 80 * scaleY
-    local optionSpacing = 20 * scaleY
-    local optionWidth = currentWidth / 2
-    local optionX = currentWidth / 4
-    
-    for i = scrollOffset + 1, math.min(scrollOffset + visibleOptions, #filteredOptions) do
-        local option = filteredOptions[i]
-        local bgY = startY + (i - scrollOffset - 1) * (optionHeight + optionSpacing)
-        
-        local mouseXCenter = mouseX
-        local mouseYCenter = mouseY
-        local isMouseOver = mouseXCenter >= optionX and mouseXCenter <= optionX + optionWidth and
-                           mouseYCenter >= bgY and mouseYCenter <= bgY + optionHeight
-        
-        if i == selectedOption or isMouseOver then
-            love.graphics.setColor(0.7, 0.7, 0.7, 1)
-        else
-            love.graphics.setColor(1, 1, 1, 1)
-        end
-        
-        love.graphics.rectangle("fill", optionX, bgY, optionWidth, optionHeight)
-        
-        local fontSize = 16 * math.min(scaleX, scaleY)
-        local font = love.graphics.newFont(fontSize)
-        love.graphics.setFont(font)
-        
-        love.graphics.setColor(0, 0, 0, 1)
-        love.graphics.printf(option.name, optionX, bgY + 10 * scaleY, optionWidth, "center")
-        love.graphics.printf("Credits: " .. option.credits, optionX, bgY + 30 * scaleY, optionWidth, "center")
-        love.graphics.printf("Difficulty: " .. option.difficulty, optionX, bgY + 50 * scaleY, optionWidth, "center")
-    end
-end
-
-function drawModifierButton()
-    local buttonSize = 80 * math.min(scaleX, scaleY)
-    local buttonX = currentWidth - 100 * scaleX
-    local buttonY = currentHeight - 100 * scaleY
-    
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.draw(ModifiersButton, buttonX, buttonY, 0, 
-                      buttonSize / ModifiersButton:getWidth(), 
-                      buttonSize / ModifiersButton:getHeight())
 end
 
 function playmenu.update(dt)
@@ -275,15 +319,17 @@ function playmenu.mousepressed(x, y, button)
 
         -- Check modifiers
         if ModifiersVisible then
-            local modifiersWidth = 200 * scaleX
-            local modifierHeight = 40 * scaleY
-            local modifierSpacing = 10 * scaleY
-            local modifierStartY = 100 * scaleY
-            
+            local modifiersWidth = 260 * scaleX
+            local modifierHeight = 44 * scaleY
+            local modifierSpacing = 14 * scaleY
+            local panelX = currentWidth - modifiersWidth - 24 * scaleX
+            local panelY = 80 * scaleY
+
             for i, modifier in ipairs(AllModifiers) do
-                local modifierY = modifierStartY + (i - 1) * (modifierHeight + modifierSpacing)
-                if x >= currentWidth - modifiersWidth + 10 * scaleX and 
-                   x <= currentWidth - 10 * scaleX and
+                local modifierY = panelY + 40 * scaleY + (i - 1) * (modifierHeight + modifierSpacing)
+                local btnX = panelX + 12 * scaleX
+                local btnW = modifiersWidth - 24 * scaleX
+                if x >= btnX and x <= btnX + btnW and
                    y >= modifierY and y <= modifierY + modifierHeight then
                     activeModifiers[modifier] = not activeModifiers[modifier]
                     return
@@ -292,9 +338,9 @@ function playmenu.mousepressed(x, y, button)
         end
 
         -- Check song selection
-        local startY = 100 * scaleY
-        local optionHeight = 80 * scaleY
-        local optionSpacing = 20 * scaleY
+        local startY = 120 * scaleY
+        local optionHeight = 90 * scaleY
+        local optionSpacing = 18 * scaleY
         local optionWidth = currentWidth / 2
         local optionX = currentWidth / 4
         
@@ -302,15 +348,19 @@ function playmenu.mousepressed(x, y, button)
             local bgY = startY + (i - scrollOffset - 1) * (optionHeight + optionSpacing)
             if x >= optionX and x <= optionX + optionWidth and
                y >= bgY and y <= bgY + optionHeight then
-                if selectedOption == i + scrollOffset then
-                    local selected = filteredOptions[selectedOption]
-                    stopMusic()
-                    startGame(selected.chart, selected.music, selected.background)
+                if selectedOption == i then
+                    local selected = filteredOptions[i]
+                    if selected then
+                        stopMusic()
+                        startGame(selected.chart, selected.music, selected.background)
+                    end
                 else
-                    selectedOption = i + scrollOffset
-                    local selected = filteredOptions[selectedOption]
-                    menu.stopMusic()
-                    playMusic(selected.music)
+                    selectedOption = i
+                    local selected = filteredOptions[i]
+                    if selected then
+                        menu.stopMusic()
+                        playMusic(selected.music)
+                    end
                 end
                 return
             end
